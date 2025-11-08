@@ -94,4 +94,19 @@ fn print_commit_info(metadata: &git::CommitMetadata) {
     println!("  Author:  {}", metadata.author);
     println!("  Date:    {}", metadata.date.format("%Y-%m-%d %H:%M:%S"));
     println!("  Message: {}", metadata.message);
+    println!();
+    println!("  Files changed: {}", metadata.changes.len());
+    for change in &metadata.changes {
+        println!("    {} {}", change.status.as_str(), change.path);
+    }
+
+    if !metadata.changes.is_empty() {
+        println!();
+        println!("  Diff:");
+        for change in &metadata.changes {
+            if !change.diff.is_empty() {
+                println!("{}", change.diff);
+            }
+        }
+    }
 }
