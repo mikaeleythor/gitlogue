@@ -21,6 +21,10 @@ impl EditorPane {
         let scroll_offset = engine.buffer.scroll_offset;
         let buffer_lines = &engine.buffer.lines;
 
+        // Calculate line number width
+        let total_lines = buffer_lines.len();
+        let line_num_width = format!("{}", total_lines).len().max(3);
+
         let visible_lines: Vec<Line> = buffer_lines
             .iter()
             .skip(scroll_offset)
@@ -28,11 +32,32 @@ impl EditorPane {
             .enumerate()
             .map(|(idx, line_content)| {
                 let line_num = scroll_offset + idx;
+                let is_cursor_line = line_num == engine.buffer.cursor_line;
+
+                let mut spans = Vec::new();
+
+                // Line number
+                let line_num_str = format!("{:>width$} ", line_num + 1, width = line_num_width);
+                if is_cursor_line {
+                    spans.push(Span::styled(
+                        line_num_str,
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    spans.push(Span::styled(
+                        line_num_str,
+                        Style::default().fg(Color::DarkGray),
+                    ));
+                }
+
+                // Line separator
+                spans.push(Span::styled("│ ", Style::default().fg(Color::DarkGray)));
 
                 // Check if cursor is on this line
-                if line_num == engine.buffer.cursor_line && engine.cursor_visible {
+                if is_cursor_line && engine.cursor_visible {
                     // Insert cursor character (use char indices, not byte indices)
-                    let mut spans = Vec::new();
                     let cursor_col = engine.buffer.cursor_col;
                     let chars: Vec<char> = line_content.chars().collect();
 
@@ -57,11 +82,11 @@ impl EditorPane {
                         let after: String = chars[cursor_col + 1..].iter().collect();
                         spans.push(Span::raw(after));
                     }
-
-                    Line::from(spans)
                 } else {
-                    Line::from(line_content.clone())
+                    spans.push(Span::raw(line_content.clone()));
                 }
+
+                Line::from(spans)
             })
             .collect();
 
