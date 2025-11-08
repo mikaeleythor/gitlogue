@@ -171,6 +171,13 @@ impl AnimationEngine {
     fn generate_steps_for_file(&mut self, change: &FileChange) {
         // Process each hunk
         for hunk in &change.hunks {
+            // Move cursor to the start of the hunk
+            self.steps.push(AnimationStep::MoveCursor {
+                line: hunk.old_start,
+                col: 0,
+            });
+            self.steps.push(AnimationStep::Pause { duration_ms: 500 });
+
             self.generate_steps_for_hunk(hunk);
             // Add pause between hunks
             self.steps.push(AnimationStep::Pause { duration_ms: 1500 });
