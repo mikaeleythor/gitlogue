@@ -303,13 +303,13 @@ impl AnimationEngine {
             // Move down
             for line in (from_line + 1)..=to_line {
                 self.steps.push(AnimationStep::MoveCursor { line, col: 0 });
-                self.steps.push(AnimationStep::Pause { duration_ms: 50 });
+                self.steps.push(AnimationStep::Pause { duration_ms: 15 });
             }
         } else {
             // Move up
             for line in (to_line..from_line).rev() {
                 self.steps.push(AnimationStep::MoveCursor { line, col: 0 });
-                self.steps.push(AnimationStep::Pause { duration_ms: 50 });
+                self.steps.push(AnimationStep::Pause { duration_ms: 15 });
             }
         }
 
@@ -370,7 +370,7 @@ impl AnimationEngine {
                             line: buffer_line,
                             col: 0,
                         });
-                        self.steps.push(AnimationStep::Pause { duration_ms: 50 });
+                        self.steps.push(AnimationStep::Pause { duration_ms: 15 });
                     }
                     cursor_line = buffer_line;
                     buffer_line += 1; // Move to next line
