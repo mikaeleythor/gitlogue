@@ -178,6 +178,8 @@ impl AnimationEngine {
         self.state = AnimationState::Playing;
         self.current_file_index = 0;
         self.terminal_lines.clear();
+        self.last_update = Instant::now();
+        self.pause_until = None;
 
         // Time travel to commit date
         let parent_hash = format!("{}^", &metadata.hash[..7]);
@@ -284,7 +286,7 @@ impl AnimationEngine {
             // Calculate target line in current buffer
             // hunk.old_start is 1-indexed (Git line numbers start at 1)
             // We need to convert to 0-indexed and adjust by how many lines we've added/removed
-            let target_line = ((hunk.old_start as i64) - 1 + line_offset) as usize;
+            let target_line = ((hunk.old_start as i64) - 1 + line_offset).max(0) as usize;
 
             // Calculate distance for speed adjustment
             let distance = if current_cursor_line < target_line {

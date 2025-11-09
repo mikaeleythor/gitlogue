@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use git2::{Commit as Git2Commit, Delta, DiffOptions, Repository};
+use git2::{Commit as Git2Commit, Delta, DiffOptions, Oid, Repository};
 use rand::Rng;
+use std::cell::RefCell;
 use std::path::Path;
 
 // Maximum blob size to read (500KB)
@@ -9,6 +10,7 @@ const MAX_BLOB_SIZE: usize = 500 * 1024;
 
 pub struct GitRepository {
     repo: Repository,
+    commit_cache: RefCell<Option<Vec<Oid>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +99,10 @@ impl GitRepository {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         let repo = Repository::open(path)
             .context("Failed to open Git repository")?;
-        Ok(Self { repo })
+        Ok(Self {
+            repo,
+            commit_cache: RefCell::new(None),
+        })
     }
 
     pub fn get_commit(&self, hash: &str) -> Result<CommitMetadata> {
@@ -113,28 +118,35 @@ impl GitRepository {
     }
 
     pub fn random_commit(&self) -> Result<CommitMetadata> {
-        // Use single revwalk - collect candidates first, then pick random
-        let mut revwalk = self.repo.revwalk()?;
-        revwalk.push_head()?;
+        // Check if cache exists, if not populate it
+        let mut cache = self.commit_cache.borrow_mut();
+        if cache.is_none() {
+            let mut revwalk = self.repo.revwalk()?;
+            revwalk.push_head()?;
 
-        let mut candidates = Vec::new();
-        for oid in revwalk.filter_map(|oid| oid.ok()) {
-            if let Ok(commit) = self.repo.find_commit(oid) {
-                if commit.parent_count() <= 1 {
-                    candidates.push(oid);
+            let mut candidates = Vec::new();
+            for oid in revwalk.filter_map(|oid| oid.ok()) {
+                if let Ok(commit) = self.repo.find_commit(oid) {
+                    if commit.parent_count() <= 1 {
+                        candidates.push(oid);
+                    }
                 }
             }
+
+            if candidates.is_empty() {
+                anyhow::bail!("No non-merge commits found in repository");
+            }
+
+            *cache = Some(candidates);
         }
 
-        if candidates.is_empty() {
-            anyhow::bail!("No non-merge commits found in repository");
-        }
-
+        let candidates = cache.as_ref().unwrap();
         let selected_oid = candidates
             .get(rand::thread_rng().gen_range(0..candidates.len()))
             .context("Failed to select random commit")?;
 
         let commit = self.repo.find_commit(*selected_oid)?;
+        drop(cache); // Release the borrow before calling extract_metadata_with_changes
         Self::extract_metadata_with_changes(&self.repo, &commit)
     }
 

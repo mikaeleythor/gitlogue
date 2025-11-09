@@ -16,9 +16,16 @@ use crate::animation::AnimationEngine;
 use crate::git::{CommitMetadata, GitRepository};
 use crate::panes::{EditorPane, FileTreePane, StatusBarPane, TerminalPane};
 
+#[derive(Debug, Clone, PartialEq)]
+enum UIState {
+    Playing,
+    WaitingForNext { resume_at: Instant },
+    Finished,
+}
+
 pub struct UI<'a> {
-    should_quit: bool,
-    is_commit_specified: bool,
+    state: UIState,
+    speed_ms: u64,
     file_tree: FileTreePane,
     editor: EditorPane,
     terminal: TerminalPane,
@@ -26,14 +33,13 @@ pub struct UI<'a> {
     engine: AnimationEngine,
     metadata: Option<CommitMetadata>,
     repo: Option<&'a GitRepository>,
-    next_commit_at: Option<Instant>,
 }
 
 impl<'a> UI<'a> {
-    pub fn new(speed_ms: u64, is_commit_specified: bool, repo: Option<&'a GitRepository>) -> Self {
+    pub fn new(speed_ms: u64, _is_commit_specified: bool, repo: Option<&'a GitRepository>) -> Self {
         Self {
-            should_quit: false,
-            is_commit_specified,
+            state: UIState::Playing,
+            speed_ms,
             file_tree: FileTreePane,
             editor: EditorPane,
             terminal: TerminalPane,
@@ -41,14 +47,13 @@ impl<'a> UI<'a> {
             engine: AnimationEngine::new(speed_ms),
             metadata: None,
             repo,
-            next_commit_at: None,
         }
     }
 
     pub fn load_commit(&mut self, metadata: CommitMetadata) {
         self.engine.load_commit(&metadata);
         self.metadata = Some(metadata);
-        self.next_commit_at = None;
+        self.state = UIState::Playing;
     }
 
     pub fn run(&mut self) -> Result<()> {
@@ -91,47 +96,52 @@ impl<'a> UI<'a> {
                 terminal.draw(|f| self.render(f))?;
             }
 
-            if event::poll(std::time::Duration::from_millis(16))? {
-                // ~60fps polling
+            if event::poll(std::time::Duration::from_millis(1))? {
                 if let Event::Key(key) = event::read()? {
                     match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => {
-                            self.should_quit = true;
+                            self.state = UIState::Finished;
                         }
                         _ => {}
                     }
                 }
             }
 
-            // Check if animation finished
-            if self.engine.is_finished() {
-                if self.is_commit_specified {
-                    // Commit was specified - just quit
-                    self.should_quit = true;
-                } else if let Some(repo) = self.repo {
-                    // Random commit mode - schedule next commit load after delay
-                    if self.next_commit_at.is_none() {
-                        // First time finishing - schedule next commit in 3 seconds
-                        self.next_commit_at = Some(Instant::now() + Duration::from_secs(3));
-                    } else if Instant::now() >= self.next_commit_at.unwrap() {
-                        // Time to load next commit
-                        match repo.random_commit() {
-                            Ok(metadata) => {
-                                self.load_commit(metadata);
-                            }
-                            Err(_) => {
-                                self.should_quit = true;
-                            }
+            // State machine
+            match self.state {
+                UIState::Playing => {
+                    if self.engine.is_finished() {
+                        if self.repo.is_some() {
+                            // Random mode - schedule next commit
+                            // Wait time proportional to speed (100x the typing speed)
+                            self.state = UIState::WaitingForNext {
+                                resume_at: Instant::now() + Duration::from_millis(self.speed_ms * 100),
+                            };
+                        } else {
+                            // Single commit mode - quit
+                            self.state = UIState::Finished;
                         }
                     }
-                } else {
-                    // No repo available - quit
-                    self.should_quit = true;
                 }
-            }
-
-            if self.should_quit {
-                break;
+                UIState::WaitingForNext { resume_at } => {
+                    if Instant::now() >= resume_at {
+                        if let Some(repo) = self.repo {
+                            match repo.random_commit() {
+                                Ok(metadata) => {
+                                    self.load_commit(metadata);
+                                }
+                                Err(_) => {
+                                    self.state = UIState::Finished;
+                                }
+                            }
+                        } else {
+                            self.state = UIState::Finished;
+                        }
+                    }
+                }
+                UIState::Finished => {
+                    break;
+                }
             }
         }
 
