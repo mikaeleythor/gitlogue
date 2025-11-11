@@ -70,41 +70,14 @@ See the [Usage Guide](docs/usage.md) for detailed examples and advanced features
 
 ## Configuration
 
-gitlogue supports configuration via a TOML file located at `~/.config/gitlogue/config.toml`.
+gitlogue can be configured via `~/.config/gitlogue/config.toml`. You can set default theme, typing speed, and background preferences.
 
-All configuration options are optional. CLI arguments take precedence over config file values.
-
-You can edit the config file manually or use the `gitlogue theme set` command to update the theme setting.
-
-### Example Configuration
-
-```toml
-# gitlogue configuration file
-# All settings are optional and will use defaults if not specified
-
-# Theme to use for syntax highlighting
-theme = "dracula"
-
-# Typing speed in milliseconds per character
-speed = 50
-
-# Show background colors (set to false for transparent background)
-background = true
+```bash
+# Set default theme
+gitlogue theme set dracula
 ```
 
-### Configuration Options
-
-- `theme` - Theme name (default: `tokyo-night`). See available themes with `gitlogue theme list`
-- `speed` - Typing speed in milliseconds per character (default: `30`)
-- `background` - Show background colors (default: `true`). Set to `false` for transparent background
-
-### Configuration Priority
-
-Settings are applied in the following order (highest priority first):
-
-1. CLI arguments (e.g., `--theme dracula`)
-2. Configuration file (`~/.config/gitlogue/config.toml`)
-3. Default values
+See the [Configuration Guide](docs/configuration.md) for detailed options and examples.
 
 ## Features
 
@@ -124,6 +97,7 @@ Rust, TypeScript, JavaScript, Python, Go, Ruby, Swift, Kotlin, Java, PHP, C#, C,
 
 - [Installation Guide](docs/installation.md) - Detailed installation instructions for different platforms
 - [Usage Guide](docs/usage.md) - Comprehensive usage examples and CLI options
+- [Configuration Guide](docs/configuration.md) - Config file options and customization
 - [Theme Customization](docs/themes.md) - Theme configuration and customization
 - [Contributing Guidelines](docs/CONTRIBUTING.md) - How to contribute to the project
 - [Architecture Overview](docs/ARCHITECTURE.md) - Technical architecture and design decisions
