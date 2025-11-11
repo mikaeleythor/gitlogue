@@ -56,6 +56,16 @@ pub struct Args {
     )]
     pub theme: Option<String>,
 
+    #[arg(
+        long,
+        default_value = "true",
+        num_args = 0..=1,
+        default_missing_value = "true",
+        value_name = "BOOL",
+        help = "Show background colors (use --background=false for transparent background)"
+    )]
+    pub background: bool,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
@@ -123,7 +133,12 @@ fn main() -> Result<()> {
     // Load theme: CLI argument > config file > default
     let config = Config::load()?;
     let theme_name = args.theme.as_deref().unwrap_or(&config.theme);
-    let theme = Theme::load(theme_name)?;
+    let mut theme = Theme::load(theme_name)?;
+
+    // Apply transparent background if requested
+    if !args.background {
+        theme = theme.with_transparent_background();
+    }
 
     // Load initial commit
     let metadata = if let Some(commit_hash) = &args.commit {
