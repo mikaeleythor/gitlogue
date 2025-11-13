@@ -105,7 +105,17 @@ Rust, TypeScript, JavaScript, Python, Go, Ruby, Swift, Kotlin, Java, PHP, C#, C,
 
 ## Related Projects
 
-Want to type code yourself? Try [**GitType**](https://github.com/unhappychoice/gittype).
+### Git Visualization & Coding
+
+- [**GitType**](https://github.com/unhappychoice/gittype) - A CLI code-typing game that turns your source code into typing challenges
+
+### Terminal Screensavers
+
+- [**tarts**](https://github.com/oiwn/tarts) - Collection of terminal screensavers in Rust (Matrix, Game of Life, Boids, 3D effects, and more)
+- [**cbonsai**](https://gitlab.com/jallbrit/cbonsai) - Grow beautiful bonsai trees in your terminal
+- [**asciiquarium**](https://github.com/cmatsuoka/asciiquarium) - Enjoy the mysteries of the sea from your terminal
+- [**cmatrix**](https://github.com/abishekvashok/cmatrix) - The Matrix screensaver effect for your terminal
+- [**pipes.sh**](https://github.com/pipeseroni/pipes.sh) - Animated pipes flowing through your terminal
 
 ## Contributing
 
