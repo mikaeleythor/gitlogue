@@ -165,8 +165,8 @@ impl<'a> UI<'a> {
                 UIState::WaitingForNext { resume_at } => {
                     if Instant::now() >= resume_at {
                         if let Some(repo) = self.repo {
-                            let result = if self.loop_playback && self.commit_spec.is_some() {
-                                // Loop mode with specific commit - replay the same commit
+                            let result = if self.commit_spec.is_some() {
+                                // Specific commit mode - replay the same commit
                                 repo.get_commit(self.commit_spec.as_ref().unwrap())
                             } else {
                                 match self.order {
@@ -180,7 +180,26 @@ impl<'a> UI<'a> {
                                     self.load_commit(metadata);
                                 }
                                 Err(_) => {
-                                    self.state = UIState::Finished;
+                                    // All commits played or error occurred
+                                    if self.loop_playback {
+                                        // Reset and start from beginning
+                                        repo.reset_index();
+                                        let restart_result = match self.order {
+                                            PlaybackOrder::Random => repo.random_commit(),
+                                            PlaybackOrder::Asc => repo.next_asc_commit(),
+                                            PlaybackOrder::Desc => repo.next_desc_commit(),
+                                        };
+                                        match restart_result {
+                                            Ok(metadata) => {
+                                                self.load_commit(metadata);
+                                            }
+                                            Err(_) => {
+                                                self.state = UIState::Finished;
+                                            }
+                                        }
+                                    } else {
+                                        self.state = UIState::Finished;
+                                    }
                                 }
                             }
                         } else {
