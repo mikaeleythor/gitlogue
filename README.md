@@ -30,6 +30,12 @@ brew install unhappychoice/tap/gitlogue
 cargo install gitlogue
 ```
 
+### On Arch Linux
+
+```bash
+pacman -S gitlogue
+```
+
 ### From Source
 
 ```bash

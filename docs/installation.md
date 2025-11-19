@@ -40,7 +40,17 @@ brew install unhappychoice/tap/gitlogue
 brew upgrade gitlogue
 ```
 
-### Method 3: Using Cargo
+### Method 3: Using pacman (Arch Linux)
+
+gitlogue is available in the [official Arch Linux repositories](https://archlinux.org/packages/extra/x86_64/gitlogue/):
+
+```bash
+sudo pacman -Syu gitlogue
+```
+
+This keeps you on the latest packaged release, integrates with system upgrades, and installs the binary into `/usr/bin`.
+
+### Method 4: Using Cargo
 
 Install from [crates.io](https://crates.io) using Cargo:
 
@@ -50,7 +60,7 @@ cargo install gitlogue
 
 This will download, compile, and install the latest version.
 
-### Method 4: Download Pre-built Binaries
+### Method 5: Download Pre-built Binaries
 
 Pre-built binaries for multiple platforms are available in the [Releases](https://github.com/unhappychoice/gitlogue/releases) section.
 
@@ -74,7 +84,7 @@ Pre-built binaries for multiple platforms are available in the [Releases](https:
    sudo mv gitlogue /usr/local/bin/
    ```
 
-### Method 5: From Source
+### Method 6: From Source
 
 If you want to build the latest development version or contribute to the project:
 
