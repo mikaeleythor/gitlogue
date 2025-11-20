@@ -210,7 +210,9 @@ impl<'a> UI<'a> {
                                             match self.order {
                                                 PlaybackOrder::Random => repo.random_range_commit(),
                                                 PlaybackOrder::Asc => repo.next_range_commit_asc(),
-                                                PlaybackOrder::Desc => repo.next_range_commit_desc(),
+                                                PlaybackOrder::Desc => {
+                                                    repo.next_range_commit_desc()
+                                                }
                                             }
                                         } else {
                                             match self.order {

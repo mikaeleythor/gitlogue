@@ -365,9 +365,7 @@ impl GitRepository {
 
         // Desc order: newest first (reverse of asc)
         let desc_index = commits.len() - 1 - *index;
-        let selected_oid = commits
-            .get(desc_index)
-            .context("Failed to select commit")?;
+        let selected_oid = commits.get(desc_index).context("Failed to select commit")?;
         *index += 1;
 
         let commit = self.repo.find_commit(*selected_oid)?;
