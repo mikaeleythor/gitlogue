@@ -1,43 +1,75 @@
 {
-  description = "Gitlogue - A Rust-based Git tool";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+  };
 
-  inputs = { nixpkgs.url = "github:NixOS/nixpkgs"; };
-
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, rust-overlay }:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-      }; # Define the system architecture here
-      gitlogue = pkgs.stdenv.mkDerivation rec {
-        pname = "gitlogue";
-        version = "v0.3.0";
-
-        src = pkgs.fetchurl {
-          url =
-            "https://github.com/unhappychoice/gitlogue/releases/download/${version}/gitlogue-${version}-x86_64-unknown-linux-gnu.tar.gz";
-          sha256 = "09fxz8c21bq4mxmxz6yxxykwy8in17f36plaq526icwqd0wpa68a";
+      cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+      pname = cargoToml.package.name;
+      version = cargoToml.package.version;
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system:
+        f {
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
+          };
+        }
+      );
+    in
+    {
+      description = cargoToml.package.description;
+      packages = forAllSystems ({ pkgs }: {
+        default = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "gitlogue";
+          version = "0.3.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "unhappychoice";
+            repo = "gitlogue";
+            rev = "v${version}";
+            hash = "sha256-yZJLCCqJVwAVQfIYfmIFb0h4Dj/sCm/b6dJTsP37bmc=";
+          };
+          cargoHash = "sha256-9FfaEHi4kJTUXd/OGslnB7f5pRsEvvuVwGAoLPKX+1s=";
+          nativeBuildInputs = [ pkgs.pkg-config pkgs.git ];
+          buildInputs = [ pkgs.openssl ];
+          doCheck = false;
         };
 
-        nativeBuildInputs = [ pkgs.curl pkgs.gnutar ];
-
-        unpackPhase = ''
-          mkdir -p $out/bin
-          tar -xzf $src
-          install -t $out/bin gitlogue
-        '';
-
-        meta = with pkgs.lib; {
-          description = "Gitlogue - A Rust-based Git tool";
-          license = licenses.mit;
-          platforms = platforms.linux;
+        unstable = pkgs.rustPlatform.buildRustPackage rec {
+          inherit pname version;
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+          nativeBuildInputs = [ pkgs.pkg-config pkgs.git ];
+          buildInputs = [ pkgs.openssl ];
+          doCheck = false;
         };
-      };
-    in {
+      });
 
-      packages.${system} = {
-        gitlogue = gitlogue;
-        default = gitlogue;
-      };
+      devShells = forAllSystems ({ pkgs }: {
+        default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.rust-bin.stable.latest.default
+            pkgs.openssl
+            pkgs.pkg-config
+            pkgs.git
+          ];
+        };
+      });
+
+      defaultPackage = forAllSystems ({ pkgs }: self.packages.${pkgs.system}.default);
+      defaultDevShell = forAllSystems ({ pkgs }: self.devShells.${pkgs.system}.default);
+
+      apps = forAllSystems ({ pkgs }: {
+        default = {
+          type = "app";
+          program = "${self.packages.${pkgs.system}.default}/bin/gitlogue";
+        };
+        unstable = {
+          type = "app";
+          program = "${self.packages.${pkgs.system}.unstable}/bin/gitlogue";
+        };
+      });
     };
 }
